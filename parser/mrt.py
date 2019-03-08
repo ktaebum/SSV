@@ -29,7 +29,7 @@ class MRTParser:
       raise FileNotFoundError('Neither dir nor file')
 
     self.filename = filename
-    self.mrt_data = dict()
+    self.data = dict()
     self.input_param = dict()
     self._store_data()
 
@@ -49,12 +49,12 @@ class MRTParser:
         line = line.strip()
         if line:
           line = line.split()
-          if line[0] == config.TIME_PREFIX:
+          if line[0] == config.MRT_TIME_PREFIX:
             record_value = True
 
             if len(timestep_data) > 0:
               # flush out previous time_info and timestep_data
-              self.mrt_data[time_info] = timestep_data
+              self.data[time_info] = timestep_data
 
             # prepare new data
             # generate new timestep_data to store actual value
@@ -90,4 +90,4 @@ class MRTParser:
 
       if len(timestep_data) > 0:
         # final flushing
-        self.mrt_data[time_info] = timestep_data
+        self.data[time_info] = timestep_data

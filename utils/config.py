@@ -29,4 +29,22 @@ MRT_TABLE_LABELS = [
     'III',
 ]
 
-TIME_PREFIX = 'OBS.TIME='
+MRT_TIME_PREFIX = 'OBS.TIME='
+
+TT_TABLE_LABELS = [
+    'Tbb',
+    'rbb',
+    'Teff',
+    'Rlast_sc',
+    'R(tau2/3)',
+    'Mbol',
+    'MU',
+    'MB',
+    'MV',
+    'MI',
+    'MR',
+    'Mbolavg',
+    'gdepos',
+]
+
+TT_TIME_PREFIX = 'time'
