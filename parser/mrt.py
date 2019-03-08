@@ -6,6 +6,7 @@ from __future__ import division
 from __future__ import absolute_import
 
 import os
+import numpy as np
 
 from utils import config
 
@@ -32,6 +33,17 @@ class MRTParser:
     self.data = dict()
     self.input_param = dict()
     self._store_data()
+
+  def get_time_range(self):
+    return np.array(list(self.data.keys()), dtype=np.float32)
+
+  def get_value_of_key_per_zon(self, key, zon):
+    values = []
+    for timestep_data in self.data.values():
+      if zon not in timestep_data:
+        raise KeyError('Non existing ZON %r' % zon)
+      values.append(timestep_data[zon].get(key, 0.0))
+    return np.array(values, dtype=np.float32)
 
   def _store_data(self):
     """
@@ -72,9 +84,12 @@ class MRTParser:
           else:
             # real data, or prefix of file
             if record_value:
-              for idx, value in enumerate(line):
+              ZON = int(line[0])
+              timestep_data[ZON] = {}
+              for idx, value in enumerate(line[1:], 1):
                 try:
-                  timestep_data[config.MRT_TABLE_LABELS[idx]] = float(value)
+                  timestep_data[ZON][config.MRT_TABLE_LABELS[idx]] = float(
+                      value)
                 except ValueError:
                   # there are some text like 2.08-100, not 2.08E-100
                   # handle these cases
@@ -86,7 +101,8 @@ class MRTParser:
                     raise ValueError(
                         'Cannot convert %r into floating point' % value)
                   value = value[0:idx] + 'E' + value[idx:]
-                  timestep_data[config.MRT_TABLE_LABELS[idx]] = float(value)
+                  timestep_data[ZON][config.MRT_TABLE_LABELS[idx]] = float(
+                      value)
 
       if len(timestep_data) > 0:
         # final flushing
