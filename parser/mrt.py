@@ -32,10 +32,30 @@ class MRTParser:
     self.filename = filename
     self.data = dict()
     self.input_param = dict()
+
+    # misc information
+    self.stellar_info = dict()
+
+    # store whole data
     self._store_data()
+    for v in self.data.values():
+      print(len(v))
 
   def get_time_range(self):
     return np.array(list(self.data.keys()), dtype=np.float32)
+
+  def get_mass_coordinate(self):
+    key = list(self.data.keys())[0]
+    mass = []
+    data = self.data[key]
+    for value in data.values():
+      coordinate = value['AM/SOL']
+      if coordinate < 0:
+        # adjust
+        coordinate = self.stellar_info['MASS'] - coordinate
+      mass.append(coordinate)
+
+    return np.array(mass, dtype=np.float32)
 
   def get_value_of_key_per_zon(self, key, zon):
     values = []
@@ -43,6 +63,18 @@ class MRTParser:
       if zon not in timestep_data:
         raise KeyError('Non existing ZON %r' % zon)
       values.append(timestep_data[zon].get(key, 0.0))
+    return np.array(values, dtype=np.float32)
+
+  def get_value_of_key(self, key):
+    values = []
+    for timestep_data in self.data.values():
+      value = []
+      for mass_data in timestep_data.values():
+        value.append(mass_data.get(key, 0.0))
+
+      print(len(value))
+      values.append(value)
+
     return np.array(values, dtype=np.float32)
 
   def _store_data(self):
@@ -61,6 +93,11 @@ class MRTParser:
         line = line.strip()
         if line:
           line = line.split()
+          if len(self.stellar_info) == 0 and 'MASS(SOLAR)=' in line:
+            # basic (essential) information
+            self.stellar_info['MASS'] = float(line[1])
+            self.stellar_info['RADIUS'] = float(line[-1])
+
           if line[0] == config.MRT_TIME_PREFIX:
             record_value = True
 
@@ -71,38 +108,40 @@ class MRTParser:
             # prepare new data
             # generate new timestep_data to store actual value
             time_info = float(line[1])
+            timestep_data = {}
 
             if time_info < 0:
               # do not care negative time (not realistic)
               record_value = False
               continue
-
-            timestep_data = {}
           elif line[0] == config.MRT_TABLE_LABELS[0]:
             # column label line
             continue
           else:
-            # real data, or prefix of file
+            # real data
             if record_value:
               ZON = int(line[0])
               timestep_data[ZON] = {}
-              for idx, value in enumerate(line[1:], 1):
+
+              def float_safe(value):
+                # safe conversion to float
+                # in mrt file, there are some text like
+                # 2.08-100, not 2.08E-100
                 try:
-                  timestep_data[ZON][config.MRT_TABLE_LABELS[idx]] = float(
-                      value)
+                  return float(value)
                 except ValueError:
-                  # there are some text like 2.08-100, not 2.08E-100
-                  # handle these cases
                   idx = value.find('-')
                   if idx == -1:
                     idx = value.find('+')
-
                   if idx == -1:
                     raise ValueError(
                         'Cannot convert %r into floating point' % value)
                   value = value[0:idx] + 'E' + value[idx:]
-                  timestep_data[ZON][config.MRT_TABLE_LABELS[idx]] = float(
-                      value)
+                  return float(value)
+
+              for idx, value in enumerate(line[1:], 1):
+                timestep_data[ZON][config.MRT_TABLE_LABELS[idx]] = float_safe(
+                    value)
 
       if len(timestep_data) > 0:
         # final flushing
