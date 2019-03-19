@@ -38,27 +38,26 @@ class MRTParser:
 
     # store whole data
     self._store_data()
-    for v in self.data.values():
-      print(len(v))
 
   def get_time_range(self):
     return np.array(list(self.data.keys()), dtype=np.float32)
 
   def get_mass_coordinate(self):
-    key = list(self.data.keys())[0]
+    key = list(self.data.keys())[-3]
     mass = []
     data = self.data[key]
     for value in data.values():
       coordinate = value['AM/SOL']
       if coordinate < 0:
         # adjust
-        coordinate = self.stellar_info['MASS'] - coordinate
+        coordinate = self.stellar_info['MASS'] + coordinate
       mass.append(coordinate)
 
     return np.array(mass, dtype=np.float32)
 
   def get_value_of_key_per_zon(self, key, zon):
     values = []
+
     for timestep_data in self.data.values():
       if zon not in timestep_data:
         raise KeyError('Non existing ZON %r' % zon)
@@ -69,13 +68,14 @@ class MRTParser:
     values = []
     for timestep_data in self.data.values():
       value = []
-      for mass_data in timestep_data.values():
-        value.append(mass_data.get(key, 0.0))
-
-      print(len(value))
+      for i in range(1, 250):
+        if i in timestep_data:
+          value.append(timestep_data[i][key])
+        else:
+          value.append(0.0)
       values.append(value)
 
-    return np.array(values, dtype=np.float32)
+    return np.rot90(np.array(values, dtype=np.float32))
 
   def _store_data(self):
     """
@@ -116,6 +116,7 @@ class MRTParser:
               continue
           elif line[0] == config.MRT_TABLE_LABELS[0]:
             # column label line
+            # next line is target data
             continue
           else:
             # real data
@@ -124,7 +125,7 @@ class MRTParser:
               timestep_data[ZON] = {}
 
               def float_safe(value):
-                # safe conversion to float
+                # safe type casting to float
                 # in mrt file, there are some text like
                 # 2.08-100, not 2.08E-100
                 try:

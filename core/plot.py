@@ -9,6 +9,9 @@ from __future__ import absolute_import
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib import ticker
+from numpy import ma
+
 
 class Plotter:
   """
@@ -41,9 +44,12 @@ class Plotter:
 
     return tuple(np.meshgrid(times, mass))
 
-  def plot_key(self, key):
+  def plot_key(self, key, log_time=True, log_value=True):
     value = self._mrt.get_value_of_key(key)
+    value = ma.masked_where(value <= 0, value)
     plt.figure()
-    plt.contour(self.times, self.mass, value)
+    plt.contour(self.times, self.mass, value, locator=ticker.LogLocator())
+    plt.colorbar()
+    plt.xscale('log')
     plt.show()
     pass
