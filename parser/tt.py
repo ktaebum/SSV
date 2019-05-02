@@ -37,6 +37,7 @@ class TTParser:
 
     self.filename = filename
     self.data = {}
+    self.stellar_info = {}
     self._store_data()
 
   def get_time_range(self):
@@ -63,14 +64,16 @@ class TTParser:
         line = line.strip()
         if line:
           line = line.split()
+          if len(self.stellar_info) == 0 and 'MASS(SOLAR)=' in line:
+            # basic (essential) information
+            self.stellar_info['MASS'] = float(line[1])
+            self.stellar_info['RADIUS'] = float(line[-1])
           if line[0] == config.TT_TIME_PREFIX:
             record_value = True
           else:
             if record_value:
               time_info = float(line[0])
               if time_info > 0:
-                values = {
-                    config.TT_TABLE_LABELS[i]: float(v)
-                    for i, v in enumerate(line[1:])
-                }
+                # valid time
+                values = {k: float(v) for k, v in zip(config.TT, line[1:])}
                 self.data[time_info] = values
