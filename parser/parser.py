@@ -1,6 +1,10 @@
 """
-Wrapper for every parser
+Interface for parser
 """
+
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from parser.tt import TTParser
 from parser.mrt import MRTParser
@@ -9,13 +13,13 @@ from parser.mrt import MRTParser
 class Parser:
 
   def __init__(self, proj_root):
+    self._fig = None
 
-    try:
-      self._mrt = MRTParser(proj_root)
-    except FileNotFoundError:
-      self._mrt = None
+  def get_value_of_key(self, key):
+    raise NotImplementedError
 
-    try:
-      self._tt = TTParser(proj_root)
-    except FileNotFoundError:
-      self._tt = None
+  def _store_data(self):
+    raise NotImplementedError
+
+  def plot(self, key):
+    raise NotImplementedError

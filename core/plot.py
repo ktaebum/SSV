@@ -9,13 +9,13 @@ from __future__ import absolute_import
 import matplotlib.pyplot as plt
 import numpy as np
 
-from matplotlib import ticker
-from numpy import ma
+from utils import config
+from utils import SWD
+from utils import TT
+from parser import TTParser
+from parser import SWDParser
 
-from utils.config import SWD, TT
-from parser.mrt import MRTParser
-from parser.tt import TTParser
-from parser.swd import SWDParser
+_SUPPORT_EXTENSIONS = ['TT', 'SWD']
 
 
 class Plotter:
@@ -24,7 +24,7 @@ class Plotter:
   Each holds single parser for specific file
   """
 
-  def __init__(self, root, figsize=(6, 4)):
+  def __init__(self, root):
     """
     @param root: project root
     """
@@ -32,81 +32,68 @@ class Plotter:
     self._swd = SWDParser(root)
     self.mass = self._mass_coord()
 
-    self._figsize = figsize
-    self._fig = None
-    self._ax = None
-    self._plot_config = {}
+    self.figs = {k: None for k in _SUPPORT_EXTENSIONS}
+    self.axs = {k: None for k in _SUPPORT_EXTENSIONS}
 
   def plot_key(self, key, **kwargs):
+    plot_config, text_config = config.build_configuration(key, **kwargs)
     if isinstance(key, SWD):
-      self._plot_swd_data(key, **kwargs)
+      self._plot_swd_data(key, plot_config, text_config)
     elif isinstance(key, TT):
-      self._plot_tt_data(key, **kwargs)
+      self._plot_tt_data(key, plot_config, text_config)
 
   def _mass_coord(self):
     mass = self._tt.stellar_info['MASS']
     log_mass = self._swd.mass
     return mass - np.power(10, log_mass)
 
-  def _plot_swd_data(self, key, **kwargs):
+  def _plot_swd_data(self, key, plot_config, text_config):
     if self._swd is None:
       raise ValueError('Must set swd parser')
-
-    logx = kwargs.get('logx', False)
-    logy = kwargs.get('logy', False)
 
     datas = self._swd.get_value_of_key(key)
     times = self._swd.times
 
     times, mass = np.meshgrid(times, self.mass)
 
-    if self._fig is None:
-      self._fig = plt.figure()
-      self._ax = self._fig.add_subplot(111)
+    if self.figs['SWD'] is None:
+      self.figs['SWD'] = plt.figure()
+      self.axs['SWD'] = self.figs['SWD'].add_subplot(111)
 
-    if logx:
-      self._ax.set_xscale('log')
-    if logy:
-      self._ax.set_yscale('log')
+    fig = self.figs['SWD']
+    ax = self.axs['SWD']
 
-    # plot setting
-    ax_dict = {
-        'title': str(key).split('.')[-1],
-        'xlabel': 't',
-        'ylabel': 'M',
-    }
-    self._ax.contour(times, mass, datas)
-    self.__set_misc(**ax_dict)
+    if plot_config['logx']:
+      ax.set_xscale('log')
+    if plot_config['logy']:
+      ax.set_yscale('log')
 
-  def _plot_tt_data(self, key, **kwargs):
+    im = ax.contourf(times, mass, datas)
+    fig.colorbar(im, ax=ax)
+    self.__set_misc(ax, text_config)
+    plt.show()
+
+  def _plot_tt_data(self, key, plot_config, text_config):
     times = self._tt.get_time_range()
     value = self._tt.get_values(key)
 
-    logx = kwargs.get('logx', False)
-    logy = kwargs.get('logy', False)
-
-    if logx:
+    if plot_config['logx']:
       times = np.log10(times)
-    if logy:
+    if plot_config['logy']:
       value = np.log10(value)
 
-    if self._fig is None:
-      self._fig = plt.figure()
-      self._ax = self._fig.add_subplot(111)
+    if self.figs['TT'] is None:
+      self.figs['TT'] = plt.figure()
+      self.axs['TT'] = self.figs['TT'].add_subplot(111)
 
-    ax_dict = {
-        'title': str(key).split('.')[-1],
-        'xlabel': 't',
-        'ylabel': 'value',
-    }
-    self._ax.plot(times, value)
-    self.__set_misc(**ax_dict)
+    fig = self.figs['TT']
+    ax = self.axs['TT']
 
-  def __set_misc(self, **kwargs):
-    title = kwargs.get('title', '')
-    xlabel = kwargs.get('xlabel', '')
-    ylabel = kwargs.get('ylabel', '')
-    self._ax.set_title(title)
-    self._ax.set_xlabel(xlabel)
-    self._ax.set_ylabel(ylabel)
-    pass
+    ax.plot(times, value)
+    self.__set_misc(ax, text_config)
+    plt.show()
+
+  def __set_misc(self, ax, text_config):
+    ax.set_title(text_config['title'])
+    ax.set_xlabel(text_config['xlabel'])
+    ax.set_ylabel(text_config['ylabel'])

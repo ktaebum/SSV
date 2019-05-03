@@ -9,6 +9,27 @@ from __future__ import absolute_import
 from enum import Enum
 
 
+def build_configuration(key, **kwargs):
+  # plot related configuration
+  plot_config = {
+      'logx': kwargs.get('logx', False),
+      'logy': kwargs.get('logy', False),
+  }
+
+  # text related configuration
+  text_config = {
+      'xlabel':
+          kwargs.get('xlabel', 't'),
+      'ylabel':
+          kwargs.get('ylabel', 'M' if isinstance(key, SWD) else 'value'),
+      'title':
+          kwargs.get('title',
+                     str(key).split('.')[-1]),
+  }
+
+  return plot_config, text_config
+
+
 class TT(Enum):
   TBB = 'temperature'
   RBB = 'radius',
