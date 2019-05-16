@@ -8,6 +8,7 @@ from __future__ import absolute_import
 import os
 import numpy as np
 
+from utils import MRT
 from utils import config
 
 
@@ -72,6 +73,7 @@ class MRTParser:
         if i in timestep_data:
           value.append(timestep_data[i][key])
         else:
+          #  value.append(timestep_data[i - 1][key])
           value.append(0.0)
       values.append(value)
 
@@ -114,7 +116,7 @@ class MRTParser:
               # do not care negative time (not realistic)
               record_value = False
               continue
-          elif line[0] == config.MRT_TABLE_LABELS[0]:
+          elif line[0] == 'ZON':
             # column label line
             # next line is target data
             continue
@@ -140,9 +142,14 @@ class MRTParser:
                   value = value[0:idx] + 'E' + value[idx:]
                   return float(value)
 
+              for key, value in zip(MRT, line[1:]):
+                timestep_data[ZON][key] = float_safe(value)
+              """
               for idx, value in enumerate(line[1:], 1):
+                timestep_data[ZON]
                 timestep_data[ZON][config.MRT_TABLE_LABELS[idx]] = float_safe(
                     value)
+              """
 
       if len(timestep_data) > 0:
         # final flushing

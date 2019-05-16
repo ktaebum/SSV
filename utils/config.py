@@ -30,6 +30,30 @@ def build_configuration(key, **kwargs):
   return plot_config, text_config
 
 
+class MRT(Enum):
+  AM = 'mass in solar mass',
+  R = 'radius cm 1e+14',
+  V = 'velocity 1e+8',
+  T = 'temperature 1e+5',
+  Trad = 'rad temperature? 1e+5',
+  logD = 'log D 1e-6',
+  logP = 'log P 1e+7',
+  XHI = 'xhi',
+  ENG = 'eng',
+  LUM = 'lum',
+  CAPPA = 'cappa',
+  ZON = 'radial zone number km',
+  N_BAR = 'n_bar',
+  N_E = 'n_e',
+  Fe = 'Fe',
+  II = 'II',
+  III = 'III',
+
+
+MRT2IDX = {k: v for v, k in enumerate(MRT)}
+MRT_TIME_PREFIX = 'OBS.TIME='
+
+
 class TT(Enum):
   TBB = 'temperature'
   RBB = 'radius',
@@ -68,3 +92,29 @@ class SWD(Enum):
 
 
 SWD2IDX = {k: v for v, k in enumerate(SWD)}
+
+
+class ABN(Enum):
+  ZON = 'radial zone number',
+  DUM1 = 'dummy1',
+  DUM2 = 'dummy2',
+  DUM3 = 'dummy3',
+  H = 'hydrogen',
+  HE = 'helium',
+  C = 'Carbon',
+  N = 'nitrogen',
+  O = 'Oxygen',
+  NE = 'Neon',
+  DUM4 = 'dummy4',
+  MG = 'magnesium',
+  DUM5 = 'dummy5',
+  SI = 'Silicon',
+  S = 'Sulfur',
+  AR = 'Argon',
+  CA = 'calcium',
+  FE = 'iron',
+  DUM6 = 'dummy6',
+  NI = 'Nickel'
+
+
+ABN2IDX = {k: v for v, k in enumerate(ABN)}

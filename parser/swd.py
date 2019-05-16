@@ -42,6 +42,10 @@ class SWDParser:
     return self.data[:, 0, 0]
 
   @property
+  def time2idx(self):
+    return {k: v for v, k in enumerate(self.times)}
+
+  @property
   def zons(self):
     return np.arange(1, self.num_zon + 1, dtype=np.float32)
 
@@ -54,7 +58,7 @@ class SWDParser:
     # get data from given key
     try:
       idx = config.SWD2IDX[key]
-      return np.rot90(self.data[:, :, idx])
+      return self.data[:, :, idx].transpose()
     except KeyError:
       return None
 
