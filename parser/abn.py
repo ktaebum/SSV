@@ -42,13 +42,19 @@ class ABNParser:
     if isinstance(key, ABN):
       data = self.data[:, config.ABN2IDX[key]]
       valid = np.where(data > threshold)
-      return valid[0][0], valid[0][-1]
+      if len(valid[0]) == 0:
+        return -1, -1
+      else:
+        return valid[0][0], valid[0][-1]
     elif isinstance(key, tuple):
       data = np.zeros(self.data.shape[0], dtype=np.float32)
       for k in key:
         data += self.data[:, config.ABN2IDX[k]]
       valid = np.where(data > threshold)
-      return valid[0][0], valid[0][-1]
+      if len(valid[0]) == 0:
+        return -1, -1
+      else:
+        return valid[0][0], valid[0][-1]
 
   def _store_data(self):
     self.data = np.loadtxt(self.filename)

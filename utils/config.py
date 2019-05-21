@@ -12,8 +12,10 @@ from enum import Enum
 def build_configuration(key, **kwargs):
   # plot related configuration
   plot_config = {
-      'logx': kwargs.get('logx', False),
-      'logy': kwargs.get('logy', False),
+      'log_time': kwargs.get('log_time', False),
+      'log_mass': kwargs.get('log_mass', False),
+      'magnitude': kwargs.get('magnitude', False),
+      'photosphere': kwargs.get('photosphere', True),
   }
 
   # text related configuration

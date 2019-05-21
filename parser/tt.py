@@ -40,6 +40,10 @@ class TTParser:
     self.stellar_info = {}
     self._store_data()
 
+  @property
+  def times(self):
+    return np.array(list(self.data.keys()), dtype=np.float32)
+
   def get_time_range(self):
     return np.array(list(self.data.keys()), dtype=np.float32)
 

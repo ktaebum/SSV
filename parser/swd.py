@@ -58,7 +58,8 @@ class SWDParser:
     # get data from given key
     try:
       idx = config.SWD2IDX[key]
-      return self.data[:, :, idx].transpose()
+      data = self.data[:, :, idx]
+      return data.transpose()
     except KeyError:
       return None
 

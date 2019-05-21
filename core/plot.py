@@ -6,18 +6,19 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import warnings
+
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import numpy as np
 
 from utils import config
 from utils import SWD
 from utils import TT
-from utils import MRT
 from utils import ABN
 from parser import TTParser
 from parser import SWDParser
 from parser import ABNParser
-from parser.mrt import MRTParser
 
 _SUPPORT_EXTENSIONS = ['TT', 'SWD']
 
@@ -34,8 +35,9 @@ class Plotter:
     """
     self._tt = TTParser(root)
     self._swd = SWDParser(root)
-    self._mrt = MRTParser(root)
+    #  self._mrt = MRTParser(root)
     self._abn = ABNParser(root)
+    self.tot_mass = self._tt.stellar_info['MASS']
     self.mass = self._mass_coord()
     self.photosphere = self._photosphere()
 
@@ -43,12 +45,149 @@ class Plotter:
     self.ax1 = None
     self.ax2 = None
 
-  def plot_key(self, key, **kwargs):
+    self.colors = []
+    self.__fill_colors()
+
+  def plot(self, key, **kwargs):
+    """ Main plot function
+    """
     plot_config, text_config = config.build_configuration(key, **kwargs)
-    if isinstance(key, SWD):
-      self._plot_swd_data(key, plot_config, text_config)
-    elif isinstance(key, TT):
-      self._plot_tt_data(key, plot_config, text_config)
+
+    data = self._swd.get_value_of_key(key)
+    if data is None:
+      warnings.warn('Cannot retreive key %s' % str(key))
+      return
+
+    time_vector = self._swd.times
+    if plot_config['log_mass']:
+      mass_vector = self._swd.mass
+    else:
+      mass_vector = self.mass
+
+    #  build mesh grid
+    times, mass = np.meshgrid(time_vector, mass_vector)
+
+    if self.fig is None:
+      self.fig = plt.figure()
+      if plot_config['magnitude']:
+        self.ax1 = plt.subplot2grid((12, 12), (0, 0), rowspan=8, colspan=12)
+        self.ax2 = plt.subplot2grid((12, 12), (9, 0), rowspan=3, colspan=12)
+        self._plot_magnitude()
+      else:
+        self.ax1 = plt.subplot2grid((12, 12), (0, 0), rowspan=12, colspan=12)
+        self.ax2 = None
+
+    fig = self.fig
+    ax = self.ax1
+
+    if plot_config['log_time']:
+      ax.set_xscale('log')
+    if plot_config['log_mass']:
+      ax.invert_yaxis()
+
+    contour = ax.contourf(times, mass, data, alpha=0.6)
+    if plot_config['photosphere']:
+      self.__fill_colors()
+
+      if plot_config['log_mass']:
+        ax.plot(
+            self._tt.times,
+            np.log10(self.tot_mass - self.photosphere),
+            color=self.colors.pop(),
+            label='photosphere')
+      else:
+        ax.plot(
+            self._tt.times,
+            self.photosphere,
+            color=self.colors.pop(),
+            label='photosphere')
+
+    ax.set_xlim(time_vector[0], time_vector[-1])
+    if not plot_config['log_mass']:
+      ax.set_ylim(mass_vector[0], self.tot_mass)
+    fig.colorbar(contour, ax=ax)
+
+    ax.set_title(text_config['title'])
+    if plot_config['log_mass']:
+      ax.set_ylabel(r'$\log{(M_{tot} - M_{r})}$')
+    else:
+      ax.set_ylabel(r'$M_{r}$')
+    ax.set_xlabel('t')
+    ax.legend()
+
+  def plot_abn_data(self, key, ratio=0.1, **kwargs):
+    if self.ax1 is None:
+      return
+
+    if not isinstance(key, (ABN, tuple)):
+      return
+
+    if isinstance(key, ABN):
+      name = str(key).split('.')[-1]
+    elif isinstance(key, tuple):
+      name = ' + '.join(list(map(lambda x: str(x).split('.')[-1], key)))
+
+    plot_config, text_config = config.build_configuration(key, **kwargs)
+    d_low, d_high = self._abn.get_element_data(key, ratio)
+
+    if d_low == -1 and d_high == -1:
+      # warning and return
+      warnings.warn('Cannot plot for %s > %1.1f' % (name, ratio))
+      return
+
+    time_vector = self._swd.times
+
+    if plot_config['log_mass']:
+      mass_low = np.log10(self.tot_mass - self.mass[d_low])
+      mass_high = np.log10(self.tot_mass - self.mass[d_high])
+    else:
+      mass_low = self.mass[d_low]
+      mass_high = self.mass[d_high]
+
+    self.__fill_colors()
+    color = self.colors.pop()
+
+    ax = self.ax1
+    ax.plot(
+        time_vector,
+        np.ones_like(time_vector) * mass_low,
+        color=color,
+        label='%s > %1.1f' % (name, ratio),
+        linewidth=3,
+    )
+    ax.plot(
+        time_vector,
+        np.ones_like(time_vector) * mass_high,
+        color=color,
+        linewidth=3,
+    )
+    ax.legend(
+        loc='upper right',
+        shadow=True,
+        bbox_to_anchor=(1.4, 1.0),
+        fontsize=12,
+    )
+
+  def _plot_magnitude(self):
+    ax = self.ax2
+    times = self._tt.times
+    bol = self._tt.get_values(TT.MBOL)
+    ax.plot(times, self._tt.get_values(TT.MBOL), label='Mbol')
+    ax.plot(times, self._tt.get_values(TT.MU), label='MU')
+    ax.plot(times, self._tt.get_values(TT.MV), label='MV')
+    ax.plot(times, self._tt.get_values(TT.MB), label='MB')
+    ax.plot(times, self._tt.get_values(TT.MI), label='MI')
+    ax.plot(times, self._tt.get_values(TT.MR), label='MR')
+    ax.set_yticks(np.linspace(np.min(bol), np.max(bol), 5))
+    ax.legend(
+        loc='upper center',
+        bbox_to_anchor=(0.5, 1.05),
+        ncol=3,
+        fancybox=True,
+        shadow=True,
+        fontsize=12)
+    ax.set_xlabel('t')
+    ax.set_ylabel('Magnitude')
 
   def _photosphere(self):
 
@@ -141,88 +280,14 @@ class Plotter:
     return np.array(r_tau_mass)
 
   def _mass_coord(self):
-    mass = self._tt.stellar_info['MASS']
     log_mass = self._swd.mass
-    return mass - np.power(10, log_mass)
-
-  def _plot_swd_data(self, key, plot_config, text_config):
-    if self._swd is None:
-      raise ValueError('Must set swd parser')
-
-    datas = self._swd.get_value_of_key(key)
-    l_times = self._swd.times  # linear times
-
-    times, mass = np.meshgrid(l_times, self.mass)
-
-    if self.fig is None:
-      self.fig = plt.figure()
-      self.ax1 = plt.subplot2grid((6, 6), (0, 0), rowspan=3, colspan=6)
-      self.ax2 = plt.subplot2grid((6, 6), (4, 0), rowspan=2, colspan=6)
-
-    fig = self.fig
-    ax1 = self.ax1
-    ax2 = self.ax2
-
-    if plot_config['logx']:
-      ax1.set_xscale('log')
-    if plot_config['logy']:
-      ax1.set_yscale('log')
-
-    H_low, H_high = self._abn.get_element_data(ABN.H)
-
-    im = ax1.contourf(times, mass, datas)
-    ax1.plot(self._tt.get_time_range(), self.photosphere)
-    ax1.plot(
-        l_times, np.ones_like(l_times) * self.mass[H_low + 1], color='red')
-    ax1.text(
-        l_times[int(l_times.shape[0] * 0.95)],
-        self.mass[H_low + 1] + 0.01,
-        'H > 0.1',
-        color='red')
-    ax1.set_xlim(l_times[0], l_times[-1])
-    fig.colorbar(im, ax=ax1)
-    self.__set_misc(ax1, text_config)
-
-    # plot related to magnitue
-    tt_times = self._tt.get_time_range()
-    ax2.plot(tt_times, self._tt.get_values(TT.MBOL), label='Mbol')
-    ax2.plot(tt_times, self._tt.get_values(TT.MU), label='MU')
-    ax2.plot(tt_times, self._tt.get_values(TT.MV), label='MV')
-    ax2.plot(tt_times, self._tt.get_values(TT.MB), label='MB')
-    ax2.plot(tt_times, self._tt.get_values(TT.MI), label='MI')
-    ax2.plot(tt_times, self._tt.get_values(TT.MR), label='MR')
-    ax2.legend(
-        loc='upper center',
-        bbox_to_anchor=(0.5, 1.05),
-        ncol=3,
-        fancybox=True,
-        shadow=True,
-        fontsize=12)
-    ax2.set_xlabel('t')
-    ax2.set_ylabel('Magnitude')
-    plt.show()
-
-  def _plot_tt_data(self, key, plot_config, text_config):
-    times = self._tt.get_time_range()
-    value = self._tt.get_values(key)
-
-    if plot_config['logx']:
-      times = np.log10(times)
-    if plot_config['logy']:
-      value = np.log10(value)
-
-    if self.figs['TT'] is None:
-      self.figs['TT'] = plt.figure()
-      self.axs['TT'] = self.figs['TT'].add_subplot(111)
-
-    fig = self.figs['TT']
-    ax = self.axs['TT']
-
-    ax.plot(times, value)
-    self.__set_misc(ax, text_config)
-    plt.show()
+    return self.tot_mass - np.power(10, log_mass)
 
   def __set_misc(self, ax, text_config):
     ax.set_title(text_config['title'])
     ax.set_xlabel(text_config['xlabel'])
     ax.set_ylabel(text_config['ylabel'])
+
+  def __fill_colors(self):
+    if len(self.colors) == 0:
+      self.colors = list(mcolors.BASE_COLORS.values())[:-1]
