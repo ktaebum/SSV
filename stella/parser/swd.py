@@ -9,7 +9,7 @@ from __future__ import absolute_import
 import os
 import numpy as np
 
-from utils import config
+from stella.utils import config
 
 
 class SWDParser:
@@ -36,6 +36,13 @@ class SWDParser:
 
     # store whole data
     self._store_data()
+    """
+    for d in self.data:
+      print(d)
+    print(self.times)
+    print(self.time2idx)
+    print(self.data.shape)
+    """
 
   @property
   def times(self):

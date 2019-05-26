@@ -9,8 +9,8 @@ from __future__ import absolute_import
 import os
 import numpy as np
 
-from utils import config
-from utils import ABN
+from stella.utils import config
+from stella.utils.config import ABN
 
 
 class ABNParser:

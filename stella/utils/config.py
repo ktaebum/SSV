@@ -6,7 +6,15 @@ from __future__ import print_function
 from __future__ import division
 from __future__ import absolute_import
 
+import numpy as np
+import stella.core.plot as stella_plot
+
 from enum import Enum
+
+
+def _valid_operation(self_type, other):
+  if not isinstance(other, (self_type, np.ndarray, int, float)):
+    raise TypeError('Cannot define operation with %r type', type(other))
 
 
 def build_configuration(key, **kwargs):
@@ -16,20 +24,11 @@ def build_configuration(key, **kwargs):
       'log_mass': kwargs.get('log_mass', False),
       'magnitude': kwargs.get('magnitude', False),
       'photosphere': kwargs.get('photosphere', True),
+      'log_time_mag': kwargs.get('log_time_mag', False),
+      'transparency': kwargs.get('transparency', 0.6),
   }
 
-  # text related configuration
-  text_config = {
-      'xlabel':
-          kwargs.get('xlabel', 't'),
-      'ylabel':
-          kwargs.get('ylabel', 'M' if isinstance(key, SWD) else 'value'),
-      'title':
-          kwargs.get('title',
-                     str(key).split('.')[-1]),
-  }
-
-  return plot_config, text_config
+  return plot_config
 
 
 class MRT(Enum):
@@ -71,6 +70,9 @@ class TT(Enum):
   MBOLAVG = 'Mbolavg',
   GDEPOS = 'gdepos'
 
+  def __add__(self, other):
+    pass
+
 
 TT2IDX = {k: v for v, k in enumerate(TT)}
 
@@ -92,6 +94,50 @@ class SWD(Enum):
   LUM = 'luminosity L_r lum40 in units 1e40 erg/s'
   KAPPA_ROSSELAND = 'kappa_Rosseland cap'
 
+  def __add__(self, other):
+    _valid_operation(SWD, other)
+
+    plotter = stella_plot.get_plotter()
+    self_data = plotter._swd.get_value_of_key(self)
+    if isinstance(other, SWD):
+      other_data = plotter._swd.get_value_of_key(other)
+      return self_data + other_data
+    else:
+      return self_data + other
+
+  def __mul__(self, other):
+    _valid_operation(SWD, other)
+
+    plotter = stella_plot.get_plotter()
+    self_data = plotter._swd.get_value_of_key(self)
+    if isinstance(other, SWD):
+      other_data = plotter._swd.get_value_of_key(other)
+      return self_data * other_data
+    else:
+      return self_data * other
+
+  def __div__(self, other):
+    _valid_operation(SWD, other)
+
+    plotter = stella_plot.get_plotter()
+    self_data = plotter._swd.get_value_of_key(self)
+    if isinstance(other, SWD):
+      other_data = plotter._swd.get_value_of_key(other)
+      return self_data / other_data
+    else:
+      return self_data / other
+
+  def __pow__(self, other):
+    _valid_operation(SWD, other)
+
+    plotter = stella_plot.get_plotter()
+    self_data = plotter._swd.get_value_of_key(self)
+    if isinstance(other, SWD):
+      other_data = plotter._swd.get_value_of_key(other)
+      return self_data**other_data
+    else:
+      return self_data**other
+
 
 SWD2IDX = {k: v for v, k in enumerate(SWD)}
 
@@ -102,21 +148,21 @@ class ABN(Enum):
   DUM2 = 'dummy2',
   DUM3 = 'dummy3',
   H = 'hydrogen',
-  HE = 'helium',
+  He = 'helium',
   C = 'Carbon',
   N = 'nitrogen',
   O = 'Oxygen',
-  NE = 'Neon',
+  Ne = 'Neon',
   DUM4 = 'dummy4',
-  MG = 'magnesium',
+  Mg = 'magnesium',
   DUM5 = 'dummy5',
-  SI = 'Silicon',
+  Si = 'Silicon',
   S = 'Sulfur',
-  AR = 'Argon',
-  CA = 'calcium',
-  FE = 'iron',
+  Ar = 'Argon',
+  Ca = 'calcium',
+  Fe = 'iron',
   DUM6 = 'dummy6',
-  NI = 'Nickel'
+  Ni = 'Nickel'
 
 
 ABN2IDX = {k: v for v, k in enumerate(ABN)}
