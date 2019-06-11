@@ -26,6 +26,7 @@ def build_configuration(key, **kwargs):
       'photosphere': kwargs.get('photosphere', True),
       'log_time_mag': kwargs.get('log_time_mag', False),
       'transparency': kwargs.get('transparency', 0.6),
+      'save': kwargs.get('save', False),
   }
 
   return plot_config

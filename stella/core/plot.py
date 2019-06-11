@@ -32,13 +32,13 @@ class Plotter:
   Each holds single parser for specific file
   """
 
-  def __init__(self, root):
+  def __init__(self, root, prefix):
     """
     @param root: project root
     """
-    self._tt = TTParser(root)
-    self._swd = SWDParser(root)
-    self._abn = ABNParser(root)
+    self._tt = TTParser(root, prefix)
+    self._swd = SWDParser(root, prefix)
+    self._abn = ABNParser(root, prefix)
     self.tot_mass = self._tt.stellar_info['MASS']
     self.mass = self._mass_coord()
     self.photosphere = self._photosphere_alter()
@@ -49,6 +49,9 @@ class Plotter:
 
     self.colors = []
     self.__fill_colors()
+
+  def save(self, name):
+    plt.savefig(name)
 
   def plot(self, data, **kwargs):
     """ Main plot function
@@ -269,7 +272,7 @@ class Plotter:
       self.colors = list(mcolors.BASE_COLORS.values())[:-1]
 
 
-def get_plotter(root=None):
+def get_plotter(root=None, prefix=None):
   """
   retreive plotter
   """
@@ -277,6 +280,6 @@ def get_plotter(root=None):
 
   if PLOTTER is None:
     if root is not None:
-      PLOTTER = Plotter(root)
+      PLOTTER = Plotter(root, prefix)
 
   return PLOTTER

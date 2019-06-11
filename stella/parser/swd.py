@@ -14,13 +14,13 @@ from stella.utils import config
 
 class SWDParser:
 
-  def __init__(self, path):
+  def __init__(self, path, prefix):
     """
     @param path: file path for data folder (or directly *.swd file)
     """
     if os.path.isdir(path):
       # directory for data folder
-      filename = os.path.join(path, path.split('/')[-1] + '.swd')
+      filename = os.path.join(path, prefix + '.swd')
     elif os.path.isfile(path):
       # file
       if path[-4:] == '.swd':

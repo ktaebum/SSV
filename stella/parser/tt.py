@@ -14,7 +14,7 @@ from stella.utils import config
 
 class TTParser:
 
-  def __init__(self, path):
+  def __init__(self, path, prefix):
     """
     @param path: file path for data folder (or directly *.tt file)
 
@@ -25,7 +25,7 @@ class TTParser:
     """
     if os.path.isdir(path):
       # directory for data folder
-      filename = os.path.join(path, path.split('/')[-1] + '.tt')
+      filename = os.path.join(path, prefix + '.tt')
     elif os.path.isfile(path):
       # file
       if path[-3:] == '.tt':

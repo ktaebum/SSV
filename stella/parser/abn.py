@@ -15,13 +15,13 @@ from stella.utils.config import ABN
 
 class ABNParser:
 
-  def __init__(self, path):
+  def __init__(self, path, prefix):
     """
     @param path: file path for data folder (or directly *.abn file)
     """
     if os.path.isdir(path):
       # directory for data folder
-      filename = os.path.join(path, path.split('/')[-1] + '.abn')
+      filename = os.path.join(path, prefix + '.abn')
     elif os.path.isfile(path):
       # file
       if path[-4:] == '.abn':
